@@ -13,7 +13,7 @@
 #     Supporting usage of InDesign API-scripting
 # -----------------------------------------------------------------------------
 #
-#     idmlbuilder.py
+#     indesignbuilder.py
 #
 import codecs
 import os, shutil
@@ -21,8 +21,6 @@ import zipfile
 from lxml import etree
 
 from pagebot.contexts.base.builder import BaseBuilder
-from idmlcontext.objects.designmap import DesignMap
-from idmlcontext.objects.spread import SpreadRoot
 
 class InDesignBuilder(BaseBuilder):
 
