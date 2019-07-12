@@ -37,11 +37,15 @@ class InDesignContext(BaseContext):
         >>> from pagebot.document import Document
         >>> from pagebot.elements import *
         >>> from pagebot.toolbox.color import color
+        >>> from pagebot.toolbox.units import p
         >>> context = InDesignContext()
         >>> doc = Document(w=600, h=800, context=context)
         >>> page = doc[1]
-        >>> e = newRect(parent=page, w=400, h=400, x=100, y=100, fill=color(1, 0, 0))
-        >>> doc.export('./Image.jsx')
+        >>> e = newRect(parent=page, w=p(16), h=p(16), x=p(8), y=p(9), fill=color(1, 0, 0))
+        >>> e = newRect(parent=page, w=p(16), h=p(16), x=p(20), y=p(11), fill=color(c=1, m=0.5, y=0, k=0, a=0.5))
+        >>> e = newRect(parent=page, w=p(16), h=p(16), x=p(12), y=p(20), fill=color(c=0.5, m=1, y=0, k=0, a=0.5))
+        >>> e = newRect(parent=page, w=p(16), h=p(16), x=p(24), y=p(22), fill=color(c=0.5, m=0, y=1, k=0, a=0.5))
+        >>> doc.export('./Image.js')
 
         """
         super().__init__()
@@ -52,7 +56,7 @@ class InDesignContext(BaseContext):
         self.b.newDocument(path)
 
     def newPage(self, w, h):
-        """Ignore for now in this context."""
+        """Have the builder create a new page in the document."""
         self.b.newPage(w, h)
 
     def frameDuration(self, frameDuration):
@@ -60,8 +64,8 @@ class InDesignContext(BaseContext):
         pass
 
     def fill(self, c):
-        """Ignore for now in this context."""
-        pass
+        """Set fill color of the builder."""
+        self.b.fill(c)
 
     def stroke(self, c, w=None):
         """Ignore for now in this context."""
