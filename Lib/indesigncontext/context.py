@@ -17,10 +17,10 @@
 #     context.py
 #
 #     InDesign JavaScript file specifications here:
-#     InDesign_ScriptingGuids_JS.df
+#     InDesign_ScriptingGuids_JS.pdf
 #
 from pagebot.contexts.base.context import BaseContext
-from pagebot.constants import FILETYPE_IDML
+from pagebot.constants import *
 from pagebot.toolbox.units import pt
 from indesigncontext.indesignbuilder import InDesignBuilder
 #from indesigncontext.string import InDesignString
@@ -39,12 +39,14 @@ class InDesignContext(BaseContext):
         >>> from pagebot.toolbox.color import color
         >>> from pagebot.toolbox.units import p
         >>> context = InDesignContext()
-        >>> doc = Document(w=600, h=800, context=context)
+        >>> doc = Document(w=510, h=720, context=context)
         >>> page = doc[1]
-        >>> e = newRect(parent=page, w=p(16), h=p(16), x=p(8), y=p(9), fill=color(1, 0, 0))
-        >>> e = newRect(parent=page, w=p(16), h=p(16), x=p(20), y=p(11), fill=color(c=1, m=0.5, y=0, k=0, a=0.5))
-        >>> e = newRect(parent=page, w=p(16), h=p(16), x=p(12), y=p(20), fill=color(c=0.5, m=1, y=0, k=0, a=0.5))
-        >>> e = newRect(parent=page, w=p(16), h=p(16), x=p(24), y=p(22), fill=color(c=0.5, m=0, y=1, k=0, a=0.5))
+        >>> page.padding = p(3)
+        >>> e = newRect(parent=page, w=p(16), h=p(16), x=page.pl, y=page.pt, fill=color(1, 0, 0))
+        >>> e = newRect(parent=page, w=p(16), h=p(16), x=p(20), y=p(11), stroke=color(1, 0, 0), strokeWidth=p(2), fill=color(c=1, m=0.5, y=0, k=0, a=0.8))
+        >>> e = newRect(parent=page, w=p(16), h=p(16), x=page.pl+p(2), y=p(20), fill=color(c=0.5, m=1, y=0, k=0, a=0.5))
+        >>> e = newOval(parent=page, w=p(16), h=p(16), x=p(24), y=p(22), fill=color(c=0.5, m=0, y=1, k=0, a=0.5))
+        >>> e = Image('resources/images/cookbot10.jpg', parent=page, x=page.pl, y=page.pt, w=page.pw, h=page.pw, scaleImage=False)
         >>> doc.export('./Image.js')
 
         """
@@ -52,12 +54,15 @@ class InDesignContext(BaseContext):
         self.b = InDesignBuilder() # cls.b builder for this context.
         self.name = self.__class__.__name__
 
-    def newDrawing(self, path=None):
-        self.b.newDocument(path)
+    def newDocument(self, w, h, **kwargs):
+        self.b.newDocument(w, h, **kwargs)
 
-    def newPage(self, w, h):
+    def newDrawing(self):
+        pass
+
+    def newPage(self, w, h, **kwargs):
         """Have the builder create a new page in the document."""
-        self.b.newPage(w, h)
+        self.b.newPage(w, h, **kwargs)
 
     def frameDuration(self, frameDuration):
         """Ignore for now in this context."""
@@ -69,17 +74,23 @@ class InDesignContext(BaseContext):
 
     def stroke(self, c, w=None):
         """Ignore for now in this context."""
-        pass
+        self.b.stroke(c, w)
 
     # Basic shapes.
 
     def rect(self, x, y, w, h):
-        """Ignore for now in this context."""
+        """New rectangle by the builder"""
         self.b.rect(x, y, w, h)
 
     def oval(self, x, y, w, h):
         """Ignore for now in this context."""
+        self.b.oval(x, y, w, h)
+
+    def scaleImage(self, path, w, h, index=0, showImageLoresMarker=False, exportExtension=None):
         pass
+
+    def image(self, path, p, alpha=1, pageNumber=None, w=None, h=None, scaleType=None):
+        self.b.image(path, p, alpha=alpha, pageNumber=pageNumber, w=w, h=h, scaleType=scaleType)
 
     def newString(self, s, e=None, style=None, w=None, h=None, pixelFit=True):
         """Creates a new styles BabelString instance of self.STRING_CLASS from
@@ -91,10 +102,6 @@ class InDesignContext(BaseContext):
         return ''
 
     def text(self, sOrBs, p):
-        """Ignore for now in this context."""
-        pass
-
-    def image(self, path, p, alpha=1, pageNumber=None, w=None, h=None):
         """Ignore for now in this context."""
         pass
 

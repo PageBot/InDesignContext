@@ -41,6 +41,9 @@ function pbGetColor(doc, c){
     return(pbColor)
 }
 
+function myScriptPath(){
+    return File(app.activeScript).parent + '/';
+}
 """
 
 if __name__ == '__main__':
