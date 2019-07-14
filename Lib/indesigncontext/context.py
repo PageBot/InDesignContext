@@ -49,7 +49,7 @@ class InDesignContext(BaseContext):
         >>> e = newRect(parent=page, w=p(16), h=p(16), x=page.pl, y=page.pt, fill=color(1, 0, 0))
         >>> e = newRect(parent=page, w=p(16), h=p(16), x=page.pl+p(2), y=p(20), fill=color(c=0.5, m=1, y=0, k=0, a=0.5))
         >>> e = newOval(parent=page, w=p(16), h=p(16), x=p(24), y=p(22), fill=color(c=0.5, m=0, y=1, k=0, a=0.5))
-        >>> doc.export('./Image.js')
+        >>> doc.export('Image.js')
 
         """
         super().__init__()

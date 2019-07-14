@@ -18,7 +18,6 @@
 import codecs
 import os, shutil
 import zipfile
-from lxml import etree
 
 from indesigncontext.constants import JSX_LIB
 from pagebot.contexts.base.builder import BaseBuilder
