@@ -42,9 +42,9 @@ class InDesignContext(BaseContext):
         >>> context = InDesignContext()
         >>> doc = Document(w=510, h=720, context=context)
         >>> page = doc[1]
-        >>> page.padding = p(3)
+        >>> page.padding = p(1)
         >>> e = newRect(parent=page, w=p(16), h=p(16), x=p(20), y=p(11), stroke=color(1, 0, 0), strokeWidth=p(2), fill=color(c=1, m=0.5, y=0, k=0, a=0.8))
-        >>> e = Image('resources/images/cookbot10.jpg', parent=page, x=page.pl, y=page.pt, w=page.pw, h=page.pw, scaleImage=False)
+        >>> e = Image('resources/images/cookbot10.jpg', parent=page, x=page.pl, y=page.pt, w=page.pw, h=page.pw, scaleImage=False, scaleType=SCALE_TYPE_FITWH)
         >>> e = newRect(parent=page, w=p(16), h=p(16), x=page.pl, y=page.pt, fill=color(1, 0, 0))
         >>> e = newRect(parent=page, w=p(16), h=p(16), x=page.pl+p(2), y=p(20), fill=color(c=0.5, m=1, y=0, k=0, a=0.5))
         >>> e = newOval(parent=page, w=p(16), h=p(16), x=p(24), y=p(22), fill=color(c=0.5, m=0, y=1, k=0, a=0.5))

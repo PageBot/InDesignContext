@@ -24,6 +24,7 @@ from indesigncontext.constants import JSX_LIB
 from pagebot.contexts.base.builder import BaseBuilder
 from pagebot.toolbox.color import noColor
 from pagebot.toolbox.units import pt, point3D
+from pagebot.constants import *
 
 class InDesignBuilder(BaseBuilder):
 
@@ -137,8 +138,10 @@ class InDesignBuilder(BaseBuilder):
         #self._out('alert(myScriptPath() + "%s");' % path)
         self._out('pbElement.place(File(myScriptPath() + "%s"));' % path)
         #self._out('pbElement.place((File("/Users/petr/Library/Preferences/Adobe InDesign/Version 14.0/en_US/Scripts/Scripts Panel/PageBot/resources/images/cookbot10.jpg")));')
+        # FitOptions: http://jongware.mit.edu/idcs4js/pe_FitOptions.html
         self._out('pbElement.fit (FitOptions.CONTENT_TO_FRAME);')
-        self._out('pbElement.fit (FitOptions.PROPORTIONALLY);')
+        if scaleType != SCALE_TYPE_FITWH:
+            self._out('pbElement.fit (FitOptions.PROPORTIONALLY);')
         self._out('pbElement.fit (FitOptions.CENTER_CONTENT);')
         
     def scale(self, sx, sy, center=None):
