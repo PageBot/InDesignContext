@@ -43,6 +43,7 @@ class InDesignBuilder(BaseBuilder):
         self.jsOut.append(s)
 
     def newDocument(self, w, h, **kwargs):
+        self._out('/* Document */')
         self._out(JSX_LIB)
         self._out('var pbDoc = app.documents.add();')
         if w is not None and h is not None:
@@ -54,6 +55,7 @@ class InDesignBuilder(BaseBuilder):
                 self._out('pbDoc.documentPreferences.pageOrientation = PageOrientation.portrait;')
 
     def newPage(self, w, h, **kwargs):
+        self._out('/* Page */')
         self._out('var pbPage = pbDoc.pages.item(0);')
         self._out('pbPage.resize(CoordinateSpaces.INNER_COORDINATES,')
         self._out('    AnchorPoint.CENTER_ANCHOR,')
@@ -69,11 +71,13 @@ class InDesignBuilder(BaseBuilder):
         self._out('var pbElement;')
  
     def rect(self, x, y, w, h):
+        self._out('/* Rect */')
         self._out('pbElement = pbPage.rectangles.add({geometricBounds:["%s", "%s", "%s", "%s"]});' % (y+h, x, y, x+w))
         self._outElementFillColor()
         self._outElementStrokeColor()
 
     def oval(self, x, y, w, h):
+        self._out('/* Oval */')
         self._out('pbElement = pbPage.ovals.add({geometricBounds:["%s", "%s", "%s", "%s"]});' % (y+h, x, y, x+w))
         self._outElementFillColor()
         self._outElementStrokeColor()
@@ -126,6 +130,7 @@ class InDesignBuilder(BaseBuilder):
         x, y, _ = point3D(p)
         w = w or pt(100)
         h = h or pt(100)
+        self._out('/* Image %s */' % path)
         self._out('pbElement = pbPage.rectangles.add({geometricBounds:["%s", "%s", "%s", "%s"]});' % (y+h, x, y, x+w))
         self._outElementFillColor()
         self._outElementStrokeColor()
