@@ -38,11 +38,10 @@ function pbGetColor(doc, c){
         pbColor = doc.swatches.item(colorName);
     }
     //alert(colorName);
-    return(pbColor)
+    return(pbColor);
 }
-
 function myScriptPath(){
-    return File(app.activeScript).parent + '/';
+    return(File(app.activeScript).parent + '/');
 }
 """
 
