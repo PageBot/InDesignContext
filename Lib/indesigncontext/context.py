@@ -17,7 +17,7 @@
 #     context.py
 #
 #     InDesign JavaScript file specifications here:
-#     InDesign_ScriptingGuids_JS.pdf
+#     https://www.adobe.com/content/dam/acom/en/devnet/indesign/sdk/cs6/scripting/InDesign_ScriptingGuide_JS.pdf
 #
 from pagebot.contexts.base.context import BaseContext
 from pagebot.constants import *
@@ -40,14 +40,18 @@ class InDesignContext(BaseContext):
         >>> from pagebot.toolbox.units import p
         >>> from indesigncontext.context import InDesignContext
         >>> context = InDesignContext()
-        >>> doc = Document(w=510, h=720, context=context)
+        >>> doc = Document(w=510, h=720, context=context, autoPages=8)
         >>> page = doc[1]
-        >>> page.padding = p(1)
-        >>> scaleType = None # SCALE_TYPE_FITWH for non-proportional
+        >>> page.padding = p(2)
+        >>> scaleType = None #SCALE_TYPE_FITWH # for non-proportional
+        >>> e = Image('resources/images/cookbot10.jpg', parent=page, x=page.pl, y=page.pt, w=page.pw, h=page.pw, scaleImage=False, fill=color(0.5), scaleType=scaleType)
         >>> e = newRect(parent=page, w=p(16), h=p(16), x=p(20), y=p(11), stroke=color(1, 0, 0), strokeWidth=p(2), fill=color(c=1, m=0.5, y=0, k=0, a=0.8))
-        >>> e = Image('resources/images/cookbot10.jpg', parent=page, x=page.pl, y=page.pt, w=page.pw, h=page.pw, scaleImage=False, scaleType=scaleType)
         >>> e = newRect(parent=page, w=p(16), h=p(16), x=page.pl, y=page.pt, fill=color(1, 0, 0))
         >>> e = newRect(parent=page, w=p(16), h=p(16), x=page.pl+p(2), y=p(20), fill=color(c=0.5, m=1, y=0, k=0, a=0.5))
+        >>> e = newOval(parent=page, w=p(16), h=p(16), x=p(24), y=p(22), fill=color(c=0.5, m=0, y=1, k=0, a=0.5))
+        >>> page = doc[2]
+        >>> page.padding = p(2)
+        >>> e = Image('resources/images/cookbot10.jpg', parent=page, x=page.pl, y=page.pt, w=page.pw, h=page.pw, scaleImage=False, fill=color(0.5), scaleType=scaleType)
         >>> e = newOval(parent=page, w=p(16), h=p(16), x=p(24), y=p(22), fill=color(c=0.5, m=0, y=1, k=0, a=0.5))
         >>> doc.export('Image.js')
 
@@ -55,44 +59,36 @@ class InDesignContext(BaseContext):
         super().__init__()
         self.b = InDesignBuilder() # cls.b builder for this context.
         self.name = self.__class__.__name__
+      
+    def newDocument(self, w=None, h=None, doc=None):
+        self.b.newDocument(w, h, doc)
 
-    def newDocument(self, w, h, **kwargs):
-        self.b.newDocument(w, h, **kwargs)
-
-    def newDrawing(self):
+    def newDrawing(self, doc=None):
         pass
 
-    def newPage(self, w, h, **kwargs):
+    def newPage(self, w=None, h=None, e=None):
         """Have the builder create a new page in the document."""
-        self.b.newPage(w, h, **kwargs)
+        self.b.newPage(w, h, e)
 
-    def frameDuration(self, frameDuration):
+    def frameDuration(self, frameDuration, e=None):
         """Ignore for now in this context."""
         pass
-
-    def fill(self, c):
-        """Set fill color of the builder."""
-        self.b.fill(c)
-
-    def stroke(self, c, w=None):
-        """Ignore for now in this context."""
-        self.b.stroke(c, w)
 
     # Basic shapes.
 
-    def rect(self, x, y, w, h):
+    def rect(self, x, y, w=None, h=None, e=None):
         """New rectangle by the builder"""
-        self.b.rect(x, y, w, h)
+        self.b.rect(x, y, w=w, h=h, e=e)
 
-    def oval(self, x, y, w, h):
+    def oval(self, x, y, w=None, h=None, e=None):
         """Ignore for now in this context."""
-        self.b.oval(x, y, w, h)
+        self.b.oval(x, y, w=w, h=h, e=e)
 
     def scaleImage(self, path, w, h, index=0, showImageLoresMarker=False, exportExtension=None):
         pass
 
-    def image(self, path, p, alpha=1, pageNumber=None, w=None, h=None, scaleType=None):
-        self.b.image(path, p, alpha=alpha, pageNumber=pageNumber, w=w, h=h, scaleType=scaleType)
+    def image(self, path, p, alpha=1, pageNumber=None, w=None, h=None, scaleType=None, e=None):
+        self.b.image(path, p, alpha=alpha, pageNumber=pageNumber, w=w, h=h, scaleType=scaleType, e=e)
 
     def newString(self, s, e=None, style=None, w=None, h=None, pixelFit=True):
         """Creates a new styles BabelString instance of self.STRING_CLASS from
