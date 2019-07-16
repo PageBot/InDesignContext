@@ -65,6 +65,17 @@ class InDesignBuilder(BaseBuilder):
                 self._out('pbDoc.documentPreferences.pageOrientation = PageOrientation.portrait;')
         self._out('var pbPage;')
         self._out('var pbPageIndex = 0;')
+        self.outDocumentStyles(self, doc)
+
+    def outDocumentStyles(self, doc):    
+        # If there are styles defined, then exporg them a paragraph styles
+        #pbDoc.paragraphStyles.add({name:"Title", appliedFont:"Upgrade", fontStyle:'Bold', 
+        #    justification:Justification.CENTER_ALIGN,
+        #    pointSize:300, leading:300, fillColor: pbGetColor(pbDoc, [255, 255, 255])});
+        for name, style in doc.styles.items():
+            self._out('pbDoc.paragraphStyles.add({')
+            self._out('')
+            self._out(')};')
 
     def newPage(self, w=None, h=None, page=None):
         w, h = self.getWH(w, h, page)
