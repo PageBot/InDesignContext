@@ -21,26 +21,32 @@
 #
 from pagebot.contexts.base.context import BaseContext
 from pagebot.constants import *
-from pagebot.toolbox.units import pt
+from pagebot.toolbox.units import pt, em
 from indesigncontext.indesignbuilder import InDesignBuilder
-#from indesigncontext.string import InDesignString
+from indesigncontext.indesignstring import InDesignString
     
 class InDesignContext(BaseContext):
 
     # Used by the generic BaseContext.newString( )
-    #STRING_CLASS = InDesignString
+    STRING_CLASS = InDesignString
     EXPORT_TYPES = (FILETYPE_IDML,)
 
     def __init__(self):
         """Constructor of InDesignContext.
 
-        >>> from pagebot.document import Document
         >>> from pagebot.elements import *
+        >>> from pagebot.document import Document
         >>> from pagebot.toolbox.color import color
-        >>> from pagebot.toolbox.units import p
+        >>> from pagebot.toolbox.units import p, pt
+        >>> from pagebot.fonttoolbox.objects.font import findFont
         >>> from indesigncontext.context import InDesignContext
         >>> context = InDesignContext()
+        >>> font = findFont('Upgrade-Medium') # Is available in Adobe 
+        >>> font
+        <Font Upgrade-Medium>
+        >>> styles = dict(h1=dict(name='h1', font=font, fontSize=pt(24), leading=em(0.9), textFill=color(1, 0, 0)))
         >>> doc = Document(w=510, h=720, context=context, autoPages=8)
+        >>> doc.styles = styles # Overwrite all default styles.
         >>> page = doc[1]
         >>> page.padding = p(2)
         >>> scaleType = None #SCALE_TYPE_FITWH # for non-proportional
@@ -49,6 +55,7 @@ class InDesignContext(BaseContext):
         >>> e = newRect(parent=page, w=p(16), h=p(16), x=page.pl, y=page.pt, fill=color(1, 0, 0))
         >>> e = newRect(parent=page, w=p(16), h=p(16), x=page.pl+p(2), y=p(20), fill=color(c=0.5, m=1, y=0, k=0, a=0.5))
         >>> e = newOval(parent=page, w=p(16), h=p(16), x=p(24), y=p(22), fill=color(c=0.5, m=0, y=1, k=0, a=0.5))
+        >>> e = newTextBox('ABCD EFGH IJKL MNOP', style=doc.styles['h1'], parent=page, w=p(16), h=p(8), x=p(34), y=p(22), padding=p(1), fill=color(c=0, m=0.5, y=1, k=0, a=0.5))
         >>> page = doc[2]
         >>> page.padding = p(2)
         >>> e = Image('resources/images/cookbot10.jpg', parent=page, x=page.pl, y=page.pt, w=page.pw, h=page.pw, scaleImage=False, fill=color(0.5), scaleType=scaleType)
@@ -84,6 +91,9 @@ class InDesignContext(BaseContext):
         """Ignore for now in this context."""
         self.b.oval(x, y, w=w, h=h, e=e)
 
+    def textBox(self, sOrBs, p, w=None, h=None, clipPath=None, e=None):
+        self.b.textBox(sOrBs, p, w=w, h=h, clipPath=clipPath, e=e)
+
     def scaleImage(self, path, w, h, index=0, showImageLoresMarker=False, exportExtension=None):
         pass
 
@@ -95,9 +105,8 @@ class InDesignContext(BaseContext):
         `s` (converted to plain unicode string), using e or style as
         typographic parameters. Ignore and just answer `s` if it is already a
         self.STRING_CLASS instance and no style is forced. PageBot function.
-
-        Ignore for now in this context."""
-        return ''
+        """
+        return self.STRING_CLASS(s, context=self, style=style)
 
     def text(self, sOrBs, p):
         """Ignore for now in this context."""

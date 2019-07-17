@@ -22,7 +22,7 @@ import zipfile
 from indesigncontext.constants import JSX_LIB
 from pagebot.contexts.base.builder import BaseBuilder
 from pagebot.toolbox.color import noColor
-from pagebot.toolbox.units import pt, point3D
+from pagebot.toolbox.units import pt, point2D
 from pagebot.constants import *
 
 class InDesignBuilder(BaseBuilder):
@@ -51,7 +51,12 @@ class InDesignBuilder(BaseBuilder):
     def _out(self, s):
         self.jsOut.append(s)
 
-    def newDocument(self, w, h, doc):
+    def getOut(self):
+        return '\n'.join(self.jsOut)
+
+    def newDocument(self, w=None, h=None, doc=None):
+        w = w or doc.w
+        h = h or doc.h
         self._out('/* Document */')
         self._out(JSX_LIB)
         self._out('var pbDoc = app.documents.add();')
@@ -65,17 +70,61 @@ class InDesignBuilder(BaseBuilder):
                 self._out('pbDoc.documentPreferences.pageOrientation = PageOrientation.portrait;')
         self._out('var pbPage;')
         self._out('var pbPageIndex = 0;')
-        self.outDocumentStyles(self, doc)
+        self.outDocumentStyles(doc)
 
     def outDocumentStyles(self, doc):    
-        # If there are styles defined, then exporg them a paragraph styles
-        #pbDoc.paragraphStyles.add({name:"Title", appliedFont:"Upgrade", fontStyle:'Bold', 
-        #    justification:Justification.CENTER_ALIGN,
-        #    pointSize:300, leading:300, fillColor: pbGetColor(pbDoc, [255, 255, 255])});
+        """If there are @doc styles defined, then export them as paragraph styles JS such as
+        pbDoc.paragraphStyles.add({name:"Title", appliedFont:"Upgrade", fontStyle:'Bold', 
+            justification:Justification.CENTER_ALIGN,
+            pointSize:300, leading:300, fillColor: pbGetColor(pbDoc, [255, 255, 255])});
+
+        >>> from pagebot.toolbox.color import color
+        >>> from pagebot.toolbox.units import pt
+        >>> from pagebot.fonttoolbox.objects.font import findFont
+        >>> from pagebot.document import Document
+        >>> from indesigncontext.context import InDesignContext
+        >>> context = InDesignContext()
+        >>> font = findFont('Upgrade-Regular')
+        >>> styles = dict(h1=dict(font=font, fontSize=pt(12), leading=pt(14), textFillColor=color(1, 0, 0)))
+        >>> doc = Document(w=500, h=800, context=context)
+        >>> doc.styles = styles # Overwrite all default styles.
+        >>> context.b.outDocumentStyles(doc)
+        >>> #context.b.getOut()
+        """
+        self._out('/* Paragraph styles */')
         for name, style in doc.styles.items():
-            self._out('pbDoc.paragraphStyles.add({')
-            self._out('')
-            self._out(')};')
+            self._out('pbDoc.paragraphStyles.add({name:"%s",' % name)
+            if 'font' in style:
+                font = style['font']
+                for n in range(20):
+                    print(n, font.ttFont['name'].getName(n, 3, 1))
+                if not isinstance(font, str): # For now, only with real Font objects.
+                    self._out('\tappliedFont:"%s",' % font.info.familyName)
+                    self._out('\tfontStyle:"%s",' % font.info.styleName)
+            if 'fontSize' in style:
+                fontSize = pt(style['fontSize'])
+                self._out('\tpointSize:"%s",' % style['fontSize'])
+            if 'leading' in style:
+                leading = style['leading']
+                leading.base = style.get('fontSize', DEFAULT_FONT_SIZE)
+                self._out('\tleading:"%s",' % pt(leading))
+            if 'textFillColor' in style:
+                fillColor = style['textFillColor']
+                if fillColor.isCmyk:
+                    c, m, y, k = fillColor.cmyk
+                    self._out('\tfillColor: pbGetColor(pbDoc, [%s, %s, %s, %s]),' % (c*100, m*100, y*100, k**100))
+                else: # Round other colors to rgb output.
+                    r, g, b = fillColor.rgb
+                    self._out('\tfillColor: pbGetColor(pbDoc, [%s, %s, %s]),' % (r*255, g*255, b*255))
+            if 'textStrokeColor' in style:
+                strokeColor = style['textStrokeColor']
+                if fillColor.isCmyk:
+                    c, m, y, k = strokeColor.cmyk
+                    self._out('\tstrokeColor: pbGetColor(pbDoc, [%s, %s, %s, %s]),' % (c*100, m*100, y*100, k**100))
+                else: # Round other colors to rgb output.
+                    r, g, b = strokeColor.rgb
+                    self._out('\tstrokeColor: pbGetColor(pbDoc, [%s, %s, %s]),' % (r*255, g*255, b*255))
+            self._out('});')
 
     def newPage(self, w=None, h=None, page=None):
         w, h = self.getWH(w, h, page)
@@ -128,16 +177,16 @@ class InDesignBuilder(BaseBuilder):
         else:
             fillColor = self._fillColor
         if fillColor not in (None, noColor):
-            if fillColor.isRgb:
-                r, g, b = self._fillColor.rgb
-                jsColor = (r*255, g*255, b*255)
-            elif fillColor.isCmyk:
+            if fillColor.isCmyk:
                 c, m, y, k = fillColor.cmyk
-                jsColor = (c*100, m*100, y*100, k*100)
+                jsColor = [c*100, m*100, y*100, k*100]
+            else: # All other color types default to fillColor.rgb:
+                r, g, b = fillColor.rgb
+                jsColor = [r*255, g*255, b*255]
         if jsColor is not None:
-            self._out('pbElement.fillColor = pbGetColor(pbDoc, %s);' % (list(jsColor),))
+            self._out('pbElement.fillColor = pbGetColor(pbDoc, %s);' % (jsColor,))
         if fillColor is not None and fillColor.a < 1:
-            self._out('pbElement.transparencySettings.blendingSettings.opacity = %s' % (fillColor.a * 100))
+            self._out('pbElement.fillTransparencySettings.blendingSettings.opacity = %s' % (fillColor.a * 100))
         return None
             
     def _outElementStrokeColor(self, e):
@@ -150,21 +199,21 @@ class InDesignBuilder(BaseBuilder):
             strokeColor = self._strokeColor
             strokeWidth = self._strokeWidth
         if strokeColor not in (None, noColor):
-            if strokeColor.isRgb:
-                r, g, b = strokeColor.rgb
-                jsColor = (r*255, g*255, b*255)
-            elif strokeColor.isCmyk:
+            if strokeColor.isCmyk:
                 c, m, y, k = strokeColor.cmyk
-                jsColor = (c*100, m*100, y*100, k*100)
+                jsColor = [c*100, m*100, y*100, k*100]
+            else: # All other color types default to strokeColor.rgb:
+                r, g, b = strokeColor.rgb
+                jsColor = [r*255, g*255, b*255]
         if jsColor is not None:
-            self._out('pbElement.strokeColor = pbGetColor(pbDoc, %s);' % (list(jsColor),))
+            self._out('pbElement.strokeColor = pbGetColor(pbDoc, %s);' % (jsColor,))
             self._out('pbElement.strokeWeight = "%s"' % strokeWidth)
-        #if strokeColor.a < 1:
-        #    self._out('pbElement.transparencySettings.blendingSettings.opacity = %s' % (strokeColor.a * 100))
+        if strokeColor is not None and strokeColor.a < 1:
+            self._out('pbElement.strokeTransparencySettings.blendingSettings.opacity = %s' % (strokeColor.a * 100))
         return None
 
     def image(self, path, p, alpha=None, pageNumber=1, w=None, h=None, scaleType=None, e=None):
-        px, py, _ = point3D(p)
+        px, py = point2D(p)
         w, h = self.getWH(w, h, e)
         self._out('/* Image %s */' % path)
         self._out('pbElement = pbPage.rectangles.add({geometricBounds:["%s", "%s", "%s", "%s"]});' % (py+h, px, py, px+w))
@@ -179,7 +228,18 @@ class InDesignBuilder(BaseBuilder):
             scaleType = e.scaleType
         if scaleType  != SCALE_TYPE_FITWH:
             self._out('pbElement.fit(FitOptions.PROPORTIONALLY);')
-        
+      
+    def textBox(self, bs, p, w=None, h=None, clipPath=None, e=None):
+        px, py = point2D(p)
+        w, h = self.getWH(w, h, e)
+        self._out('pbElement = pbPage.textFrames.add({geometricBounds:["%s", "%s", "%s", "%s"]});' % (py+h, px, py, px+w))
+        self._outElementFillColor(e)
+        self._outElementStrokeColor(e)
+        self._out('pbElement.contents = "%s";' % bs.s)
+        if e is not None or e.style:
+            self._out('pbElement.parentStory.paragraphs.item(0).appliedParagraphStyle = pbDoc.paragraphStyles.item("%s", false);' % e.style['name'])   
+        self._out('pbElement.textFramePreferences.insetSpacing = ["%s", "%s", "%s", "%s"]; // top, left, bottom, right' % (e.pt, e.pl, e.pb, e.pr))
+
     def scale(self, sx, sy, center=None):
         pass
 
@@ -200,7 +260,7 @@ class InDesignBuilder(BaseBuilder):
         """
         for basePath in (self.SCRIPT_PATH, self.SCRIPT_PATH1):
             f = codecs.open(basePath + path, 'w', encoding='utf-8')
-            f.write('\n'.join(self.jsOut))
+            f.write(self.getOut())
             f.write('\n' * 4)
             f.close()
          
