@@ -36,6 +36,7 @@ class InDesignBuilder(BaseBuilder):
         self._fillColor = noColor
         self._strokeColor = noColor
         self._strokeWidth = pt(1)
+        self.originTop = True
 
         self.jsOut = []
 
@@ -48,6 +49,14 @@ class InDesignBuilder(BaseBuilder):
             h = h or DEFAILT_HEIGHT
         return w, h
 
+    def getXY(self, x, y, w, h):
+        """Calculate positions, using self.originTop flag, answer as rectangle of bounding box
+        (topY, rightX, bottomY, leftX) to be used in origin-top setting of InDesign canvas.
+        """
+        if self.originTop:
+            return y, x+w, y+h, x
+        return y+h, x+w, y, x  
+
     def _out(self, s):
         self.jsOut.append(s)
 
@@ -55,8 +64,13 @@ class InDesignBuilder(BaseBuilder):
         return '\n'.join(self.jsOut)
 
     def newDocument(self, w=None, h=None, doc=None):
-        w = w or doc.w
-        h = h or doc.h
+        if doc is not None:
+            w = w or doc.w
+            h = h or doc.h
+            self.originTop = doc.originTop
+        else:
+            w = w or DEFAULT_WIDTH
+            h = h or DEFAULT_HEIGHT
         self._out('/* Document */')
         self._out(JSX_LIB)
         self._out('var pbDoc = app.documents.add();')
@@ -68,8 +82,10 @@ class InDesignBuilder(BaseBuilder):
                 self._out('pbDoc.documentPreferences.pageOrientation = PageOrientation.landscape;')
             else:
                 self._out('pbDoc.documentPreferences.pageOrientation = PageOrientation.portrait;')
+        self._out('pbDoc.documentPreferences.facingPages = false;')
         self._out('var pbPage;')
         self._out('var pbPageIndex = 0;')
+        self._out('var pbElement;')
         self.outDocumentStyles(doc)
 
     def outDocumentStyles(self, doc):    
@@ -96,8 +112,6 @@ class InDesignBuilder(BaseBuilder):
             self._out('pbDoc.paragraphStyles.add({name:"%s",' % name)
             if 'font' in style:
                 font = style['font']
-                for n in range(20):
-                    print(n, font.ttFont['name'].getName(n, 3, 1))
                 if not isinstance(font, str): # For now, only with real Font objects.
                     self._out('\tappliedFont:"%s",' % font.info.familyName)
                     self._out('\tfontStyle:"%s",' % font.info.styleName)
@@ -108,16 +122,16 @@ class InDesignBuilder(BaseBuilder):
                 leading = style['leading']
                 leading.base = style.get('fontSize', DEFAULT_FONT_SIZE)
                 self._out('\tleading:"%s",' % pt(leading))
-            if 'textFillColor' in style:
-                fillColor = style['textFillColor']
+            if 'textFill' in style:
+                fillColor = style['textFill']
                 if fillColor.isCmyk:
                     c, m, y, k = fillColor.cmyk
                     self._out('\tfillColor: pbGetColor(pbDoc, [%s, %s, %s, %s]),' % (c*100, m*100, y*100, k**100))
                 else: # Round other colors to rgb output.
                     r, g, b = fillColor.rgb
                     self._out('\tfillColor: pbGetColor(pbDoc, [%s, %s, %s]),' % (r*255, g*255, b*255))
-            if 'textStrokeColor' in style:
-                strokeColor = style['textStrokeColor']
+            if 'textStroke' in style:
+                strokeColor = style['textStroke']
                 if fillColor.isCmyk:
                     c, m, y, k = strokeColor.cmyk
                     self._out('\tstrokeColor: pbGetColor(pbDoc, [%s, %s, %s, %s]),' % (c*100, m*100, y*100, k**100))
@@ -126,35 +140,46 @@ class InDesignBuilder(BaseBuilder):
                     self._out('\tstrokeColor: pbGetColor(pbDoc, [%s, %s, %s]),' % (r*255, g*255, b*255))
             self._out('});')
 
+    def _outSelectPage(self, e):
+        """Output code to select the e.page if it is not selected already."""
+        if e is not None:
+            self._out('pbPageIndex = %d' % (e.page.index))
+            self._out('pbPage = pbDoc.pages.item(pbPageIndex);')
+
     def newPage(self, w=None, h=None, page=None):
         w, h = self.getWH(w, h, page)
         self._out('/* Page */')
-        self._out('if (pbPage){')
-        self._out('    pbPageIndex += 1;')
-        self._out('}')
-        self._out('pbPage = pbDoc.pages.item(pbPageIndex);')
+        if page is not None:
+            self._outSelectPage(page)
+        else:
+            self._out('if (pbPage) pbPageIndex += 1;')
+            self._out('pbPage = pbDoc.pages.item(pbPageIndex);')
         self._out('pbPage.resize(CoordinateSpaces.INNER_COORDINATES,')
         self._out('    AnchorPoint.CENTER_ANCHOR,')
         self._out('    ResizeMethods.REPLACING_CURRENT_DIMENSIONS_WITH,')
         self._out('    [%d, %d]);' % (w.pt, h.pt))
-        mt, mr, mb, ml = page.padding
-        self._out('pbPage.marginPreferences.top = "%s";' % mt)
-        self._out('pbPage.marginPreferences.right = "%s";' % mr)
-        self._out('pbPage.marginPreferences.bottom = "%s";' % mb)
-        self._out('pbPage.marginPreferences.left = "%s";' % ml)
-        self._out('var pbElement;')
+        if page is not None:
+            pt, pr, pb, pl = page.padding # Padding is called margin in InDesign script.
+            self._out('pbPage.marginPreferences.top = "%s";' % pt)
+            self._out('pbPage.marginPreferences.right = "%s";' % pr)
+            self._out('pbPage.marginPreferences.bottom = "%s";' % pb)
+            self._out('pbPage.marginPreferences.left = "%s";' % pl)
  
-    def rect(self, px, py, w=None, h=None, e=None):
+    def rect(self, x, y, w=None, h=None, e=None):
         w, h = self.getWH(w, h, e)
+        px1, py1, px2, py2 = self.getXY(x, y, w, h) # Calculate positions, using self.originTop flag.
         self._out('/* Rect */')
-        self._out('pbElement = pbPage.rectangles.add({geometricBounds:["%s", "%s", "%s", "%s"]});' % (py+h, px, py, px+w))
+        self._outSelectPage(e)
+        self._out('pbElement = pbPage.rectangles.add({geometricBounds:["%s", "%s", "%s", "%s"]});' % (py1, px1, py2, px2))
         self._outElementFillColor(e)
         self._outElementStrokeColor(e)
 
-    def oval(self, px, py, w=None, h=None, e=None):
+    def oval(self, x, y, w=None, h=None, e=None):
         w, h = self.getWH(w, h, e)
+        px1, py1, px2, py2 = self.getXY(x, y, w, h) # Calculate positions, using self.originTop flag.
         self._out('/* Oval */')
-        self._out('pbElement = pbPage.ovals.add({geometricBounds:["%s", "%s", "%s", "%s"]});' % (py+h, px, py, px+w))
+        self._outSelectPage(e)
+        self._out('pbElement = pbPage.ovals.add({geometricBounds:["%s", "%s", "%s", "%s"]});' % (py1, px1, py2, px2))
         self._outElementFillColor(e)
         self._outElementStrokeColor(e)
 
@@ -213,10 +238,12 @@ class InDesignBuilder(BaseBuilder):
         return None
 
     def image(self, path, p, alpha=None, pageNumber=1, w=None, h=None, scaleType=None, e=None):
-        px, py = point2D(p)
         w, h = self.getWH(w, h, e)
+        x, y = point2D(p)
+        px1, py1, px2, py2 = self.getXY(x, y, w, h) # Calculate positions, using self.originTop flag.
         self._out('/* Image %s */' % path)
-        self._out('pbElement = pbPage.rectangles.add({geometricBounds:["%s", "%s", "%s", "%s"]});' % (py+h, px, py, px+w))
+        self._outSelectPage(e)
+        self._out('pbElement = pbPage.rectangles.add({geometricBounds:["%s", "%s", "%s", "%s"]});' % (py1, px1, py2, px2))
         self._outElementFillColor(e)
         self._outElementStrokeColor(e)
         #self._out('alert(myScriptPath() + "%s");' % path)
@@ -230,9 +257,12 @@ class InDesignBuilder(BaseBuilder):
             self._out('pbElement.fit(FitOptions.PROPORTIONALLY);')
       
     def textBox(self, bs, p, w=None, h=None, clipPath=None, e=None):
-        px, py = point2D(p)
         w, h = self.getWH(w, h, e)
-        self._out('pbElement = pbPage.textFrames.add({geometricBounds:["%s", "%s", "%s", "%s"]});' % (py+h, px, py, px+w))
+        x, y = point2D(p)
+        px1, py1, px2, py2 = self.getXY(x, y, w, h) # Calculate positions, using self.originTop flag.
+        self._out('/* TextBox */')
+        self._outSelectPage(e)
+        self._out('pbElement = pbPage.textFrames.add({geometricBounds:["%s", "%s", "%s", "%s"]});' % (py1, px1, py2, px2))
         self._outElementFillColor(e)
         self._outElementStrokeColor(e)
         self._out('pbElement.contents = "%s";' % bs.s)
