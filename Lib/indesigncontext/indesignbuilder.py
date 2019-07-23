@@ -29,8 +29,14 @@ class InDesignBuilder(BaseBuilder):
 
     PB_ID = 'inds'
 
-    SCRIPT_PATH = '/Users/petr/Library/Preferences/Adobe InDesign/Version 14.0/en_US/Scripts/Scripts Panel/PageBot/'
-    SCRIPT_PATH1 = '_export/'
+    from os.path import expanduser
+    home = expanduser("~")
+
+    #TODO: get latest InDesign version for path.
+    VERSION = '13.0'
+    SCRIPT_PATH = '%s/Library/Preferences/Adobe InDesign/Version %s/en_US/Scripts/Scripts Panel/PageBot/' % (home, VERSION)
+    LOCAL_FOLDER = '_export/'
+    #SCRIPT_PATH = '/Users/petr/Library/Preferences/Adobe InDesign/Version 14.0/en_US/Scripts/Scripts Panel/PageBot/'
 
     def __init__(self):
         self._fillColor = noColor
@@ -55,7 +61,7 @@ class InDesignBuilder(BaseBuilder):
         """
         if self.originTop:
             return y, x+w, y+h, x
-        return y+h, x+w, y, x  
+        return y+h, x+w, y, x
 
     def _out(self, s):
         self.jsOut.append(s)
@@ -88,9 +94,9 @@ class InDesignBuilder(BaseBuilder):
         self._out('var pbElement;')
         self.outDocumentStyles(doc)
 
-    def outDocumentStyles(self, doc):    
+    def outDocumentStyles(self, doc):
         """If there are @doc styles defined, then export them as paragraph styles JS such as
-        pbDoc.paragraphStyles.add({name:"Title", appliedFont:"Upgrade", fontStyle:'Bold', 
+        pbDoc.paragraphStyles.add({name:"Title", appliedFont:"Upgrade", fontStyle:'Bold',
             justification:Justification.CENTER_ALIGN,
             pointSize:300, leading:300, fillColor: pbGetColor(pbDoc, [255, 255, 255])});
 
@@ -164,7 +170,7 @@ class InDesignBuilder(BaseBuilder):
             self._out('pbPage.marginPreferences.right = "%s";' % pr)
             self._out('pbPage.marginPreferences.bottom = "%s";' % pb)
             self._out('pbPage.marginPreferences.left = "%s";' % pl)
- 
+
     def rect(self, x, y, w=None, h=None, e=None):
         w, h = self.getWH(w, h, e)
         px1, py1, px2, py2 = self.getXY(x, y, w, h) # Calculate positions, using self.originTop flag.
@@ -193,7 +199,7 @@ class InDesignBuilder(BaseBuilder):
     def strokeWidth(self, w):
         if w is not None:
             self._strokeWidth = w
-            
+
     def _outElementFillColor(self, e):
         """Set the fill color of pbElement to the current self._fillColor."""
         jsColor = None
@@ -213,7 +219,7 @@ class InDesignBuilder(BaseBuilder):
         if fillColor is not None and fillColor.a < 1:
             self._out('pbElement.fillTransparencySettings.blendingSettings.opacity = %s' % (fillColor.a * 100))
         return None
-            
+
     def _outElementStrokeColor(self, e):
         """Set the fill color of pbElement to the current self._strokeColor."""
         jsColor = None
@@ -255,7 +261,7 @@ class InDesignBuilder(BaseBuilder):
             scaleType = e.scaleType
         if scaleType  != SCALE_TYPE_FITWH:
             self._out('pbElement.fit(FitOptions.PROPORTIONALLY);')
-      
+
     def textBox(self, bs, p, w=None, h=None, clipPath=None, e=None):
         w, h = self.getWH(w, h, e)
         x, y = point2D(p)
@@ -267,7 +273,7 @@ class InDesignBuilder(BaseBuilder):
         self._outElementStrokeColor(e)
         self._out('pbElement.contents = "%s";' % bs.s)
         if e is not None or e.style:
-            self._out('pbElement.parentStory.paragraphs.item(0).appliedParagraphStyle = pbDoc.paragraphStyles.item("%s", false);' % e.style['name'])   
+            self._out('pbElement.parentStory.paragraphs.item(0).appliedParagraphStyle = pbDoc.paragraphStyles.item("%s", false);' % e.style['name'])
         self._out('pbElement.textFramePreferences.insetSpacing = ["%s", "%s", "%s", "%s"]; // top, left, bottom, right' % (e.pt, e.pl, e.pb, e.pr))
 
     def scale(self, sx, sy, center=None):
@@ -284,17 +290,19 @@ class InDesignBuilder(BaseBuilder):
 
     def restore(self):
         pass
-       
+
     def saveDocument(self, path):
         """Write the IDML file from idmlRoot, indicated by path.
+
         """
-        for basePath in (self.SCRIPT_PATH, self.SCRIPT_PATH1):
-            f = codecs.open(basePath + path, 'w', encoding='utf-8')
-            f.write(self.getOut())
-            f.write('\n' * 4)
-            f.close()
-         
-     
+        print('path %s' % path)
+
+        f = codecs.open(path, 'w', encoding='utf-8')
+        #f = codecs.open(self.SCRIPT_PATH + path, 'w', encoding='utf-8')
+        f.write(self.getOut())
+        f.write('\n' * 4)
+        f.close()
+
 
 if __name__ == '__main__':
     import doctest

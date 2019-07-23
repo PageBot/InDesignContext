@@ -24,7 +24,7 @@ from pagebot.constants import *
 from pagebot.toolbox.units import pt, em
 from indesigncontext.indesignbuilder import InDesignBuilder
 from indesigncontext.indesignstring import InDesignString
-    
+
 class InDesignContext(BaseContext):
 
     # Used by the generic BaseContext.newString( )
@@ -41,7 +41,7 @@ class InDesignContext(BaseContext):
         >>> from pagebot.fonttoolbox.objects.font import findFont
         >>> from indesigncontext.context import InDesignContext
         >>> context = InDesignContext()
-        >>> font = findFont('Upgrade-Medium') # Is available in Adobe 
+        >>> font = findFont('Upgrade-Medium') # Is available in Adobe
         >>> font
         <Font Upgrade-Medium>
         >>> styles = {}
@@ -59,7 +59,7 @@ class InDesignContext(BaseContext):
         >>> e = newRect(parent=page, w=p(16), h=p(16), x=page.pl+p(2), y=p(50), fill=color(c=0.5, m=1, y=0, k=0, a=0.5))
         >>> e = newOval(parent=page, w=p(16), h=p(16), x=p(24), y=p(42), fill=color(c=0.5, m=0, y=1, k=0, a=0.5))
         >>> e = newTextBox('ABCD EFGH IJKL MNOP', style=doc.styles['h1'], parent=page, w=p(16), h=p(8), x=p(34), y=p(22), padding=p(1), fill=color(c=0, m=0.5, y=1, k=0, a=0.5))
-        >>> page = page.next        
+        >>> page = page.next
         >>> e = Image('resources/images/cookbot10.jpg', parent=page, x=page.pl, y=page.pt, w=page.pw, h=page.pw, scaleImage=False, fill=color(0.5), scaleType=scaleType)
         >>> e = newOval(parent=page, w=p(16), h=p(16), x=p(24), y=p(22), fill=color(c=0.5, m=0, y=1, k=0, a=0.5))
         >>> e = newTextBox('@XYZ', style=doc.styles['h0'], parent=page, w=p(26), h=p(8), x=p(14), y=p(22), padding=p(1), fill=color(c=0, m=0.5, y=1, k=0, a=0.5))
@@ -77,11 +77,11 @@ class InDesignContext(BaseContext):
         super().__init__()
         self.b = InDesignBuilder() # cls.b builder for this context.
         self.name = self.__class__.__name__
-      
+
     def newDocument(self, w=None, h=None, doc=None):
         self.b.newDocument(w, h, doc)
 
-    def newDrawing(self):
+    def newDrawing(self, doc=None):
         pass
 
     def newPage(self, w=None, h=None, e=None):
