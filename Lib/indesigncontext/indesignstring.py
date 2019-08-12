@@ -24,14 +24,13 @@ from pagebot.toolbox.units import isUnit
 from pagebot.fonttoolbox.objects.font import findFont
 
 class InDesignString(BabelString):
+    """InDesignString is a wrapper around the Indesign string."""
 
     BABEL_STRING_TYPE = 'indesign'
 
-    """InDesignString is a wrapper around the Indesign string."""
     def __init__(self, s, context, style=None):
-        """Constructor of the DrawBotString, wrapper around
-        DrawBot.FormattedString. Optionally store the (latest) style that was
-        used to produce the formatted string.
+        """Constructor of the InDesignString. Optionally store the (latest)
+        style that was used to produce the formatted string.
 
         >>> from indesigncontext.context import InDesignContext
         >>> from pagebot.toolbox.units import pt
@@ -52,7 +51,7 @@ class InDesignString(BabelString):
         self.runs = [[str(s), copy.copy(style)]] # Format is [(s1, style1), (s2, style2), ...]
 
     def __add__(self, bs):
-        """Add bs to self.
+        """Adds bs to self.
 
         >>> from indesigncontext.context import InDesignContext
         >>> from pagebot.toolbox.units import pt
@@ -72,12 +71,12 @@ class InDesignString(BabelString):
         """
         if isinstance(bs, self.__class__):
             self.runs += bs.runs
-        else:            
+        else:
             self.runs.append([str(bs), {}])
         return self
 
     def _get_style(self):
-        """Answer the last style of the runs. Otherwise answer None.
+        """Answers the last style of the runs. Otherwise answer None.
 
         >>> from indesigncontext.context import InDesignContext
         >>> from pagebot.toolbox.units import pt
@@ -88,7 +87,7 @@ class InDesignString(BabelString):
         ('ABCD', {'fontSize': 21pt})
         """
         if self.runs:
-            return self.runs[-1][1] 
+            return self.runs[-1][1]
         return None
     def _set_style(self, style):
         """Replace the style of the last run by a copy of @style.
@@ -128,7 +127,7 @@ class InDesignString(BabelString):
             runs.append(s)
         return ''.join(runs)
     def _set_s(self, s):
-        self.runs = [(s, {})] 
+        self.runs = [(s, {})]
     s = property(_get_s, _set_s)
 
     def _get_font(self):
@@ -197,7 +196,7 @@ class InDesignString(BabelString):
         >>> context = InDesignContext()
         >>> fs = InDesignString('ABC', context)
         >>> bs.runs
-        
+
         >>> fs.s
         'ABC'
         >>> fs.asText()
@@ -265,15 +264,20 @@ class InDesignString(BabelString):
         elif sCapitalized:
             s = s.capitalize()
 
-        # Since Indesign does not do font GSUB feature compile, we'll make the transformed string here,
-        # using Tal's https://github.com/typesupply/compositor
+        # Since Indesign does not do font GSUB feature compile, we'll make the
+        # transformed string here, using Tal's
+        #
+        # https://github.com/typesupply/compositor
+        #
         # This needs to be installed, in case PageBot is running outside of DrawBot.
 
         font = style.get('font')
+
         if font is not None and not isinstance(font, str):
             font = font.path
         if font is None or not os.path.exists(font):
             font = DEFAULT_FONT_PATH
+
         fontSize = style.get('fontSize', DEFAULT_FONT_SIZE)
         assert isUnit(fontSize), ('%s.newString: FontSize %s must be of type Unit' % (cls.__name__, fontSize))
         leading = style.get('leading', DEFAULT_LEADING)
@@ -286,7 +290,6 @@ class InDesignString(BabelString):
         #s = strike.text(s)
         s = ''
         return cls(s, context=context, style=style) # Make real Indesign flavor BabelString here.
-
 
 if __name__ == '__main__':
     import doctest

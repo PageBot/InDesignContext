@@ -56,9 +56,9 @@ class InDesignBuilder(BaseBuilder):
         return w, h
 
     def getXY(self, x, y, w, h):
-        """Calculate positions, using self.originTop flag, answer as rectangle of bounding box
-        (topY, rightX, bottomY, leftX) to be used in origin-top setting of InDesign canvas.
-        """
+        """Calculates positions, using self.originTop flag, answer as rectangle
+        of bounding box (topY, rightX, bottomY, leftX) to be used in origin-top
+        setting of InDesign canvas."""
         if self.originTop:
             return y, x+w, y+h, x
         return y+h, x+w, y, x
@@ -96,6 +96,7 @@ class InDesignBuilder(BaseBuilder):
 
     def outDocumentStyles(self, doc):
         """If there are @doc styles defined, then export them as paragraph styles JS such as
+
         pbDoc.paragraphStyles.add({name:"Title", appliedFont:"Upgrade", fontStyle:'Bold',
             justification:Justification.CENTER_ALIGN,
             pointSize:300, leading:300, fillColor: pbGetColor(pbDoc, [255, 255, 255])});
@@ -263,17 +264,23 @@ class InDesignBuilder(BaseBuilder):
             self._out('pbElement.fit(FitOptions.PROPORTIONALLY);')
 
     def textBox(self, bs, p, w=None, h=None, clipPath=None, e=None):
+
         w, h = self.getWH(w, h, e)
         x, y = point2D(p)
-        px1, py1, px2, py2 = self.getXY(x, y, w, h) # Calculate positions, using self.originTop flag.
+
+        # Calculate positions, using self.originTop flag.
+        px1, py1, px2, py2 = self.getXY(x, y, w, h)
+
         self._out('/* TextBox */')
         self._outSelectPage(e)
         self._out('pbElement = pbPage.textFrames.add({geometricBounds:["%s", "%s", "%s", "%s"]});' % (py1, px1, py2, px2))
         self._outElementFillColor(e)
         self._outElementStrokeColor(e)
         self._out('pbElement.contents = "%s";' % bs.s)
-        if e is not None or e.style:
+
+        if e is not None and e.style and 'name' in e.style:
             self._out('pbElement.parentStory.paragraphs.item(0).appliedParagraphStyle = pbDoc.paragraphStyles.item("%s", false);' % e.style['name'])
+
         self._out('pbElement.textFramePreferences.insetSpacing = ["%s", "%s", "%s", "%s"]; // top, left, bottom, right' % (e.pt, e.pl, e.pb, e.pr))
 
     def scale(self, sx, sy, center=None):
@@ -292,9 +299,7 @@ class InDesignBuilder(BaseBuilder):
         pass
 
     def saveDocument(self, path):
-        """Write the IDML file from idmlRoot, indicated by path.
-
-        """
+        """Write the IDML file from idmlRoot, indicated by path."""
         print('path %s' % path)
 
         f = codecs.open(path, 'w', encoding='utf-8')
@@ -302,7 +307,6 @@ class InDesignBuilder(BaseBuilder):
         f.write(self.getOut())
         f.write('\n' * 4)
         f.close()
-
 
 if __name__ == '__main__':
     import doctest
